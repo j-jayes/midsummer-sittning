@@ -1,0 +1,140 @@
+---
+title: "ingest"
+author: "JJayes"
+date: "28/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(here)
+
+```
+
+### Read in data for orders
+
+```{r}
+df <- read_excel(here("data", "raw_orders.xlsx")) %>% janitor::clean_names()
+```
+
+### Investigate
+
+```{r}
+df <- df %>% 
+  filter(!is.na(item))
+
+df <- df %>% 
+  mutate(index = case_when(
+    item == "Produkt" ~ 1,
+    TRUE ~ 0
+  )) %>% 
+  mutate(person = cumsum(index)) %>% 
+  select(-index)
+
+df <- df %>% 
+  filter(!item %in% c("Produkt", "Totalt", "Midsummer Sittning dinner ticket (vegetarian)"))
+
+df <- df %>% 
+  group_by(person) %>% 
+  count(item, number) %>% 
+  ungroup() %>% 
+  select(-number) %>% 
+  pivot_wider(names_from = item, values_from = n) %>% 
+  janitor::clean_names()
+
+df_info <- df
+```
+
+### Read in data for 
+
+```{r}
+df <- read_excel(here("data", "raw_names.xlsx")) %>% janitor::clean_names()
+
+df <- df %>% 
+  filter(!is.na(item))
+
+df <- df %>% 
+  mutate(index = case_when(
+    item == "Namn" ~ 1,
+    TRUE ~ 0
+  )) %>% 
+  mutate(person = cumsum(index)) %>% 
+  select(-index)
+
+
+df <- df %>% 
+  filter(item %in% c("Namn", "Land", "E-post", "Mobiltelefon")) %>% 
+  pivot_wider(names_from = item) %>% 
+  janitor::clean_names()
+```
+
+
+### join
+
+```{r}
+df <- df %>% 
+  inner_join(df_info)
+```
+
+### Add in committee and Damla
+
+```{r}
+df <- df %>% 
+  bind_rows(read_excel(here("data", "df_committee.xlsx")))
+```
+
+```{r}
+df %>% 
+  write_csv(here("data", "attendees.csv"))
+```
+
+
+### now what do we need?
+
+- List for flower crowns
+- List for seating chart based on nationality, then coloured based on food, drinks etc.
+- Email MOP
+- How many after party tickets can we sell?
+
+## List for flower crowns
+
+```{r}
+df %>% 
+  filter(midsummer_flower_crown != 0) %>% 
+  select(namn, e_post, mobiltelefon) 
+  # write.csv(here("data", "flower_crowns.csv"))
+```
+
+## Email MOP
+
+```{r}
+df %>% 
+  count(alcohol_package_includes_2_glasses_of_wine)
+
+df %>% 
+  count(dinner_ticket_add_on_adding_traditional_swedish_fish_to_the_dinner)
+```
+
+
+
+```{r}
+df %>% 
+  count(land, sort = T)
+```
+
+### seating chart
+
+```{r}
+df %>% 
+  count(after_party_ticket)
+```
+
+```{r}
+
+```
+
+
+
