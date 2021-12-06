@@ -36,7 +36,31 @@ df <- df %>%
 
 df <- df %>% 
   filter(!item %in% c("Produkt", "Totalt", "Midsummer Sittning dinner ticket (vegetarian)"))
+```
 
+### What is the budget?
+
+```{r}
+# revenue
+revenue <- df %>% 
+  filter(item %in% c("Dinner ticket (vegetarian)", "Alcohol package (includes 2 glasses of wine)", "After party ticket", "Dinner ticket (add-on) adding traditional swedish fish to the dinner")) %>% 
+  mutate(price = str_replace_all(price, ",", "."),
+         price = parse_number(price)) %>%
+  summarise(sum(price)) 
+
+revenue
+
+# subsidized LE for us per person
+30+330+60+60
+# herring, after party, drinks, food
+480*10
+
+(480*10) + revenue %>% pull
+```
+
+
+
+```{r}
 df <- df %>% 
   group_by(person) %>% 
   count(item, number) %>% 
@@ -86,9 +110,46 @@ df <- df %>%
   bind_rows(read_excel(here("data", "df_committee.xlsx")))
 ```
 
+
+### Making edits
+
+Olivia Henriksson to fish
+
+Madeleine Erikson to veggie
+
+Oskar Andersson to fish
+
+
 ```{r}
+df <- df %>% 
+  mutate(dinner_ticket_add_on_adding_traditional_swedish_fish_to_the_dinner = case_when(
+    str_detect(namn, "Olivia  Henriksson") ~ 1,
+    str_detect(namn, "Madeleine Erikson") ~ 0,
+    str_detect(namn, "Oskar Andersson") ~ 1,
+    TRUE ~ dinner_ticket_add_on_adding_traditional_swedish_fish_to_the_dinner
+  ))
+
+
+df %>% count(dinner_ticket_add_on_adding_traditional_swedish_fish_to_the_dinner)
+
+df %>% arrange(dinner_ticket_add_on_adding_traditional_swedish_fish_to_the_dinner) %>% 
+  select(dinner_ticket_add_on_adding_traditional_swedish_fish_to_the_dinner) %>% 
+  mutate(dinner_ticket_add_on_adding_traditional_swedish_fish_to_the_dinner = as.character(dinner_ticket_add_on_adding_traditional_swedish_fish_to_the_dinner)) %>%
+  pull() %>% 
+  writeClipboard()
+
+```
+
+```{r}
+
+
+
 df %>% 
-  write_csv(here("data", "attendees.csv"))
+  write_excel_csv(here("data", "attendees.csv"))
+
+df %>% filter(!is.na(snapsbiljett_maximum_2_person)) %>% 
+  select(namn) %>% pull() %>% 
+  writeClipboard()
 ```
 
 
@@ -131,10 +192,5 @@ df %>%
 df %>% 
   count(after_party_ticket)
 ```
-
-```{r}
-
-```
-
 
 
